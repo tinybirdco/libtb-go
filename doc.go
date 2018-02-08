@@ -10,4 +10,4 @@ See https://honeycomb.io/docs for background on this library.
 
 Look in the examples/ directory for a complete example using libhoney.
 */
-package libhoney
+package libclick

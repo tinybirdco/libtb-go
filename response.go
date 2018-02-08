@@ -1,4 +1,4 @@
-package libhoney
+package libclick
 
 import (
 	"encoding/json"

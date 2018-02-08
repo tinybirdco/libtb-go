@@ -1,4 +1,4 @@
-package libhoney
+package libclick
 
 // txClient handles the transmission of events to Honeycomb.
 //
@@ -159,6 +159,7 @@ func (b *batchAgg) fireBatch(events []*Event) {
 		// we managed to create a batch key with no events. odd. move on.
 		return
 	}
+
 	encEvs, numEncoded := b.encodeBatch(events)
 	// if we failed to encode any events skip this batch
 	if numEncoded == 0 {
@@ -198,8 +199,11 @@ func (b *batchAgg) fireBatch(events []*Event) {
 		}
 		return
 	}
-	url.Path = path.Join(url.Path, "/1/batch", dataset)
-	req, err := http.NewRequest("POST", url.String(), reqBody)
+	// url.Path = path.Join(url.Path, "/1/batch", dataset)
+	url.Path = path.Join(url.Path, "/")
+	//req, err := http.NewRequest("POST", url.String(), reqBody)
+	//req, err := http.NewRequest("POST", strings.Join([]string{url.String(), "?query=INSERT+INTO+", dataset, "+FORMAT+JSONEachRow"}, ""), bytes.NewReader(encEvs))
+	req, err := http.NewRequest("POST", strings.Join([]string{url.String(), "?query=INSERT+INTO+", dataset, "+FORMAT+JSONEachRow"}, ""), reqBody)
 	req.Header.Set("Content-Type", "application/json")
 	if gzipped {
 		req.Header.Set("Content-Encoding", "gzip")
@@ -287,11 +291,11 @@ func (b *batchAgg) encodeBatch(events []*Event) ([]byte, int) {
 	// track how many we successfully encode for later bookkeeping
 	var numEncoded int
 	buf := bytes.Buffer{}
-	buf.WriteByte('[')
+	//buf.WriteByte('[')
 	// ok, we've got our array, let's populate it with JSON events
 	for i, ev := range events {
 		if !first {
-			buf.WriteByte(',')
+			buf.WriteByte(13)
 		}
 		first = false
 		evByt, err := json.Marshal(ev)
@@ -308,7 +312,8 @@ func (b *batchAgg) encodeBatch(events []*Event) ([]byte, int) {
 		buf.Write(evByt)
 		numEncoded++
 	}
-	buf.WriteByte(']')
+	//buf.WriteByte(']')
+
 	return buf.Bytes(), numEncoded
 }
 
