@@ -1,13 +1,9 @@
 /*
-Package libhoney is a client library for sending data to https://honeycomb.io
+Package libclick is a client library for sending data to ClickHouse DB Server
 
 Summary
 
-libhoney aims to make it as easy as possible to create events and send them on
-into Honeycomb.
+libclick aims to make it as easy as possible to create events and send them into ClickHouse.
 
-See https://honeycomb.io/docs for background on this library.
-
-Look in the examples/ directory for a complete example using libhoney.
 */
 package libclick

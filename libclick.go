@@ -13,7 +13,6 @@ import (
 	"math/rand"
 	"net/http"
 	"net/url"
-	"path"
 	"reflect"
 	"sort"
 	"strings"
@@ -130,13 +129,7 @@ type Config struct {
 	Transport http.RoundTripper
 }
 
-// VerifyWriteKey calls out to the Honeycomb API to validate the write key, so
-// we can exit immediately if desired instead of happily sending events that
-// are all rejected.
-func VerifyWriteKey(config Config) error {
-	if config.WriteKey == "" {
-		return errors.New("Write key is empty")
-	}
+func VerifyApiHost(config Config) error {
 	if config.APIHost == "" {
 		config.APIHost = defaultAPIHost
 	}
@@ -144,13 +137,11 @@ func VerifyWriteKey(config Config) error {
 	if err != nil {
 		return fmt.Errorf("Error parsing API URL: %s", err)
 	}
-	u.Path = path.Join(u.Path, "1", "team_slug")
-	req, err := http.NewRequest("GET", u.String(), nil)
+	req, err := http.NewRequest("GET", strings.Join([]string{u.String(), "?query=SELECT+'Ok.'"}, "") , nil)
 	if err != nil {
 		return err
 	}
 	req.Header.Set("User-Agent", UserAgentAddition)
-	req.Header.Add("X-Honeycomb-Team", config.WriteKey)
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
@@ -158,11 +149,11 @@ func VerifyWriteKey(config Config) error {
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode == http.StatusUnauthorized {
-		return errors.New("Write key provided is invalid")
+		return errors.New("ClickHouse server rejected authentication")
 	}
 	if resp.StatusCode != http.StatusOK {
 		body, _ := ioutil.ReadAll(resp.Body)
-		return fmt.Errorf(`Abnormal non-200 response verifying Honeycomb write key: %d
+		return fmt.Errorf(`Abnormal non-200 response from ClickHouse server: %d
 Response body: %s`, resp.StatusCode, string(body))
 	}
 

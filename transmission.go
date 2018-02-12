@@ -171,7 +171,7 @@ func (b *batchAgg) fireBatch(events []*Event) {
 	dataset := events[0].Dataset
 
 	// sigh. dislike
-	userAgent := fmt.Sprintf("libhoney-go/%s", version)
+	userAgent := fmt.Sprintf("libclick-go/%s", version)
 	if UserAgentAddition != "" {
 		userAgent = fmt.Sprintf("%s %s", userAgent, strings.TrimSpace(UserAgentAddition))
 	}
