@@ -203,6 +203,7 @@ func (e *Event) MarshalJSON() ([]byte, error) {
     if !e.Timestamp.IsZero() {
         e.data["_date"] = e.Timestamp.Format(time.RFC3339)[0:10]
         e.data["_time"] = e.Timestamp.Format(time.RFC3339)[0:19]
+        e.data["_ms"] = e.Timestamp.Nanosecond() / 1000
     }
 
 	return json.Marshal(e.data) /*struct {

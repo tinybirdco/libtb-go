@@ -9,7 +9,7 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/honeycombio/libhoney-go"
+	"github.com/Altinity/libclick-go"
 )
 
 // This example reads JSON blobs from a file and sends them as Honeycomb events.
@@ -30,21 +30,21 @@ var jsonFilePaths = []string{"./example1.json", "./example2.json"}
 func main() {
 
 	// basic initialization
-	libhConf := libhoney.Config{
+	libhConf := libclick.Config{
 		WriteKey: honeyFakeWritekey,
 		Dataset:  honeyDataset,
 	}
-	libhoney.Init(libhConf)
-	defer libhoney.Close()
-	go readResponses(libhoney.Responses())
+	libclick.Init(libhConf)
+	defer libclick.Close()
+	go readResponses(libclick.Responses())
 
 	// We want every event to include the number of currently running goroutines
 	// and the version number of this app. The goroutines is contrived for this
 	// example, but is useful in larger apps. Adding the version number to the
 	// global scope means every event sent will include this field.
-	libhoney.AddDynamicField("num_goroutines",
+	libclick.AddDynamicField("num_goroutines",
 		func() interface{} { return runtime.NumGoroutine() })
-	libhoney.AddField("read_json_log_version", version)
+	libclick.AddField("read_json_log_version", version)
 
 	// go through each json file and parse it.
 	for _, fileName := range jsonFilePaths {
@@ -59,7 +59,7 @@ func main() {
 		// processed. This builder will be passed in to processLine so all events
 		// created within that function will have the information about the file
 		// and line being processed.
-		perFileBulider := libhoney.NewBuilder()
+		perFileBulider := libclick.NewBuilder()
 		perFileBulider.AddField("json_file_name", fileName)
 
 		scanner := bufio.NewScanner(fh)
@@ -75,7 +75,7 @@ func main() {
 	fmt.Println("All done! Go check Honeycomb https://ui.honeycomb.io/ to see your data.")
 }
 
-func readResponses(responses chan libhoney.Response) {
+func readResponses(responses chan libclick.Response) {
 	for r := range responses {
 		if r.StatusCode >= 200 && r.StatusCode < 300 {
 			id := r.Metadata.(string)
@@ -87,7 +87,7 @@ func readResponses(responses chan libhoney.Response) {
 	}
 }
 
-func processLine(line string, builder *libhoney.Builder) {
+func processLine(line string, builder *libclick.Builder) {
 
 	// Create the event that this line will fill. because we're creating it from
 	// the Builder, it will already have a field containing the name and line
