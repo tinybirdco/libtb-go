@@ -50,7 +50,7 @@ type txDefaultClient struct {
 	muster muster.Client
 }
 
-func (t *txDefaultClient) Start() error {
+func (t *txDefaultClient) Start() error { 
 	t.muster.MaxBatchSize = t.maxBatchSize
 	t.muster.BatchTimeout = t.batchTimeout
 	t.muster.MaxConcurrentBatches = t.maxConcurrentBatches
