@@ -2,7 +2,7 @@
 // Use of this source code is governed by the Apache License 2.0
 // license that can be found in the LICENSE file.
 
-package libclick
+package libtb
 
 import (
 	"bytes"
@@ -64,8 +64,8 @@ var (
 )
 
 // UserAgentAddition is a variable set at compile time via -ldflags to allow you
-// to augment the "User-Agent" header that libclick sends along with each event.
-// The default User-Agent is "libclick-go/<version>". If you set this variable, its
+// to augment the "User-Agent" header that libtb sends along with each event.
+// The default User-Agent is "libtb-go/<version>". If you set this variable, its
 // contents will be appended to the User-Agent string, separated by a space. The
 // expected format is product-name/version, eg "myapp/1.0"
 var UserAgentAddition string
@@ -74,13 +74,13 @@ var UserAgentAddition string
 type Config struct {
 
 	// WriteKey is the Honeycomb authentication token. If it is specified during
-	// libclick initialization, it will be used as the default write key for all
+	// libtb initialization, it will be used as the default write key for all
 	// events. If absent, write key must be explicitly set on a builder or
 	// event. Find your team write key at https://ui.honeycomb.io/account
 	WriteKey string
 
 	// Dataset is the name of the Honeycomb dataset to which to send these events.
-	// If it is specified during libclick initialization, it will be used as the
+	// If it is specified during libtb initialization, it will be used as the
 	// default dataset for all events. If absent, dataset must be explicitly set
 	// on a builder or event.
 	Dataset string
@@ -96,12 +96,12 @@ type Config struct {
 
 	// TODO add logger in an agnostic way
 
-	// BlockOnSend determines if libclick should block or drop packets that exceed
+	// BlockOnSend determines if libtb should block or drop packets that exceed
 	// the size of the send channel (set by PendingWorkCapacity). Defaults to
 	// False - events overflowing the send channel will be dropped.
 	BlockOnSend bool
 
-	// BlockOnResponse determines if libclick should block trying to hand
+	// BlockOnResponse determines if libtb should block trying to hand
 	// responses back to the caller. If this is true and there is nothing reading
 	// from the Responses channel, it will fill up and prevent events from being
 	// sent to Honeycomb. Defaults to False - if you don't read from the Responses
@@ -137,7 +137,7 @@ func VerifyApiHost(config Config) error {
 	if err != nil {
 		return fmt.Errorf("Error parsing API URL: %s", err)
 	}
-	req, err := http.NewRequest("GET", strings.Join([]string{u.String(), "?query=SELECT+'Ok.'"}, "") , nil)
+	req, err := http.NewRequest("GET", strings.Join([]string{u.String(), "?query=SELECT+'Ok.'"}, ""), nil)
 	if err != nil {
 		return err
 	}
@@ -200,11 +200,11 @@ func (e *Event) MarshalJSON() ([]byte, error) {
 		sampleRate = 0
 	}
 
-    if !e.Timestamp.IsZero() {
-        e.data["_date"] = e.Timestamp.Format(time.RFC3339)[0:10]
-        e.data["_time"] = e.Timestamp.Format(time.RFC3339)[0:19]
-        e.data["_ms"] = e.Timestamp.Nanosecond() / 1000
-    }
+	if !e.Timestamp.IsZero() {
+		e.data["_date"] = e.Timestamp.Format(time.RFC3339)[0:10]
+		e.data["_time"] = e.Timestamp.Format(time.RFC3339)[0:19]
+		e.data["_ms"] = e.Timestamp.Nanosecond() / 1000
+	}
 
 	return json.Marshal(e.data) /*struct {
 		Data       marshallableMap `json:"data"`
@@ -348,7 +348,7 @@ func Init(config Config) error {
 		return err
 	}
 
-	sd, _ = statsd.New(statsd.Prefix("libclick"))
+	sd, _ = statsd.New(statsd.Prefix("libtb"))
 	responses = make(chan Response, config.PendingWorkCapacity*2)
 
 	defaultBuilder = &Builder{

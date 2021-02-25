@@ -1,4 +1,4 @@
-package libclick
+package libtb
 
 // txClient handles the transmission of events to Honeycomb.
 //
@@ -50,7 +50,7 @@ type txDefaultClient struct {
 	muster muster.Client
 }
 
-func (t *txDefaultClient) Start() error { 
+func (t *txDefaultClient) Start() error {
 	t.muster.MaxBatchSize = t.maxBatchSize
 	t.muster.BatchTimeout = t.batchTimeout
 	t.muster.MaxConcurrentBatches = t.maxConcurrentBatches
@@ -171,7 +171,7 @@ func (b *batchAgg) fireBatch(events []*Event) {
 	dataset := events[0].Dataset
 
 	// sigh. dislike
-	userAgent := fmt.Sprintf("libclick-go/%s", version)
+	userAgent := fmt.Sprintf("libtb-go/%s", version)
 	if UserAgentAddition != "" {
 		userAgent = fmt.Sprintf("%s %s", userAgent, strings.TrimSpace(UserAgentAddition))
 	}

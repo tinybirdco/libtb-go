@@ -1,4 +1,4 @@
-package libclick
+package libtb
 
 import (
 	"encoding/json"
