@@ -28,8 +28,9 @@ func init() {
 
 const (
 	defaultSampleRate = 1
-	defaultAPIHost    = "http://localhost:8123/"
-	version           = "1.4.0"
+	// defaultAPIHost    = "http://localhost:8123/"
+	defaultAPIHost = "http://localhost:8001/"
+	version        = "1.4.0"
 
 	// DefaultMaxBatchSize how many events to collect in a batch
 	DefaultMaxBatchSize = 1000000
@@ -137,7 +138,7 @@ func VerifyApiHost(config Config) error {
 	if err != nil {
 		return fmt.Errorf("Error parsing API URL: %s", err)
 	}
-	req, err := http.NewRequest("GET", strings.Join([]string{u.String(), "?query=SELECT+'Ok.'"}, ""), nil)
+	req, err := http.NewRequest("GET", strings.Join([]string{u.String(), "v0/datasources/nginx_1?token=p.eyJ1IjogIjMzNjU3ODViLTRlNTYtNDY3MS1iMGUzLThjNjUzOTJiODhlYSIsICJpZCI6ICJiOTMwZjMyMi00MGYyLTQ5MDYtYWYxYi1jMjNiMWE2MmJkNWUifQ.AjCuIPMjMzzp_zprh_8ha2ALe4CMjOBOQOGyQALde-M"}, ""), nil)
 	if err != nil {
 		return err
 	}
@@ -149,11 +150,11 @@ func VerifyApiHost(config Config) error {
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode == http.StatusUnauthorized {
-		return errors.New("ClickHouse server rejected authentication")
+		return errors.New("Tinybird server rejected authentication")
 	}
 	if resp.StatusCode != http.StatusOK {
 		body, _ := ioutil.ReadAll(resp.Body)
-		return fmt.Errorf(`Abnormal non-200 response from ClickHouse server: %d
+		return fmt.Errorf(`Abnormal non-200 response from Tinybird server: %d
 Response body: %s`, resp.StatusCode, string(body))
 	}
 

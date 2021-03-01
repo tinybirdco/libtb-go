@@ -12,7 +12,6 @@ package libtb
 
 import (
 	"bytes"
-	"compress/gzip"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -22,6 +21,7 @@ import (
 	"net/url"
 	"os"
 	"path"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -203,13 +203,27 @@ func (b *batchAgg) fireBatch(events []*Event) {
 	url.Path = path.Join(url.Path, "/")
 	//req, err := http.NewRequest("POST", url.String(), reqBody)
 	//req, err := http.NewRequest("POST", strings.Join([]string{url.String(), "?query=INSERT+INTO+", dataset, "+FORMAT+JSONEachRow"}, ""), bytes.NewReader(encEvs))
-	req, err := http.NewRequest("POST", strings.Join([]string{url.String(), "?query=INSERT+INTO+", dataset, "+FORMAT+JSONEachRow"}, ""), reqBody)
-	req.Header.Set("Content-Type", "application/json")
+	// req, err := http.NewRequest("POST", strings.Join([]string{url.String(), "?query=INSERT+INTO+", dataset, "+FORMAT+JSONEachRow"}, ""), reqBody)
+
+	req, err := http.NewRequest("POST", strings.Join([]string{url.String(), "v0/datasources?name=", dataset, "&mode=append"}, ""), reqBody)
+
+	q := req.URL.Query()
+	q.Add("name", dataset)
+	q.Add("dialect_delimiter", "|")
+	req.URL.RawQuery = q.Encode()
+
+	// req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Content-Type", "application/csv")
 	if gzipped {
 		req.Header.Set("Content-Encoding", "gzip")
 	}
 	req.Header.Set("User-Agent", userAgent)
 	req.Header.Add("X-Honeycomb-Team", writeKey)
+
+	// var bearer = "Bearer " + writeKey
+	var bearer = "Bearer " + "p.eyJ1IjogIjMzNjU3ODViLTRlNTYtNDY3MS1iMGUzLThjNjUzOTJiODhlYSIsICJpZCI6ICJiOTMwZjMyMi00MGYyLTQ5MDYtYWYxYi1jMjNiMWE2MmJkNWUifQ.AjCuIPMjMzzp_zprh_8ha2ALe4CMjOBOQOGyQALde-M"
+	req.Header.Add("Authorization", bearer)
+
 	// send off batch!
 	resp, err := b.httpClient.Do(req)
 	end := time.Now().UTC()
@@ -225,6 +239,7 @@ func (b *batchAgg) fireBatch(events []*Event) {
 		// that didn't already error during encoding
 		b.enqueueErrResponses(err, events, dur/time.Duration(numEncoded))
 		// the POST failed so we're done with this batch key's worth of events
+		fmt.Println("Error calling TB")
 		return
 	}
 
@@ -236,6 +251,7 @@ func (b *batchAgg) fireBatch(events []*Event) {
 	if resp.StatusCode != http.StatusOK {
 		sd.Increment("send_errors")
 		body, err := ioutil.ReadAll(resp.Body)
+		fmt.Println(string(body))
 		if err != nil {
 			b.enqueueErrResponses(fmt.Errorf("Got HTTP error code but couldn't read response body: %v", err),
 				events, dur/time.Duration(numEncoded))
@@ -299,6 +315,10 @@ func (b *batchAgg) encodeBatch(events []*Event) ([]byte, int) {
 		}
 		first = false
 		evByt, err := json.Marshal(ev)
+		var escEventContent string = strconv.Quote(fmt.Sprintf("%s", evByt))
+
+		fmt.Printf("EVENTO: %s\n", escEventContent)
+
 		if err != nil {
 			b.enqueueResponse(Response{
 				Err:      err,
@@ -309,7 +329,8 @@ func (b *batchAgg) encodeBatch(events []*Event) ([]byte, int) {
 			events[i] = nil
 			continue
 		}
-		buf.Write(evByt)
+		// buf.Write(evByt)
+		buf.Write([]byte(escEventContent))
 		numEncoded++
 	}
 	//buf.WriteByte(']')
@@ -332,13 +353,13 @@ func (b *batchAgg) enqueueErrResponses(err error, events []*Event, duration time
 // buildReqReader returns an io.Reader and a boolean, indicating whether or not
 // the io.Reader is gzip-compressed.
 func buildReqReader(jsonEncoded []byte) (io.Reader, bool) {
-	buf := bytes.Buffer{}
-	g := gzip.NewWriter(&buf)
-	if _, err := g.Write(jsonEncoded); err == nil {
-		if err = g.Close(); err == nil { // flush
-			return &buf, true
-		}
-	}
+	// buf := bytes.Buffer{}
+	// g := gzip.NewWriter(&buf)
+	// if _, err := g.Write(jsonEncoded); err == nil {
+	// 	if err = g.Close(); err == nil { // flush
+	// 		return &buf, true
+	// 	}
+	// }
 	return bytes.NewReader(jsonEncoded), false
 }
 
