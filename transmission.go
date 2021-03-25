@@ -212,7 +212,7 @@ func (b *batchAgg) fireBatch(events []*Event) {
 	q.Add("dialect_delimiter", "|")
 	req.URL.RawQuery = q.Encode()
 
-	// req.Header.Set("Content-Type", "application/json")
+	//req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Content-Type", "application/csv")
 	if gzipped {
 		req.Header.Set("Content-Encoding", "gzip")
@@ -220,8 +220,8 @@ func (b *batchAgg) fireBatch(events []*Event) {
 	req.Header.Set("User-Agent", userAgent)
 	req.Header.Add("X-Honeycomb-Team", writeKey)
 
-	// var bearer = "Bearer " + writeKey
-	var bearer = "Bearer " + "p.eyJ1IjogIjMzNjU3ODViLTRlNTYtNDY3MS1iMGUzLThjNjUzOTJiODhlYSIsICJpZCI6ICJiOTMwZjMyMi00MGYyLTQ5MDYtYWYxYi1jMjNiMWE2MmJkNWUifQ.AjCuIPMjMzzp_zprh_8ha2ALe4CMjOBOQOGyQALde-M"
+	var bearer = "Bearer " + writeKey
+	//var bearer = "Bearer " + "p.eyJ1IjogIjMzNjU3ODViLTRlNTYtNDY3MS1iMGUzLThjNjUzOTJiODhlYSIsICJpZCI6ICJiOTMwZjMyMi00MGYyLTQ5MDYtYWYxYi1jMjNiMWE2MmJkNWUifQ.AjCuIPMjMzzp_zprh_8ha2ALe4CMjOBOQOGyQALde-M"
 	req.Header.Add("Authorization", bearer)
 
 	// send off batch!
@@ -382,7 +382,9 @@ func (w *WriterOutput) Stop() error  { return nil }
 func (w *WriterOutput) Add(ev *Event) {
 	w.Lock()
 	defer w.Unlock()
-	m, _ := ev.MarshalCSV()
+	//m, _ := ev.MarshalCSV()
+	m, _ := ev.MarshalJSON()
+
 	m = append(m, '\n')
 	if w.W == nil {
 		w.W = os.Stdout

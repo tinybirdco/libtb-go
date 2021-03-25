@@ -138,7 +138,9 @@ func VerifyApiHost(config Config) error {
 	if err != nil {
 		return fmt.Errorf("Error parsing API URL: %s", err)
 	}
-	req, err := http.NewRequest("GET", strings.Join([]string{u.String(), "v0/datasources/nginx_1?token=p.eyJ1IjogIjMzNjU3ODViLTRlNTYtNDY3MS1iMGUzLThjNjUzOTJiODhlYSIsICJpZCI6ICJiOTMwZjMyMi00MGYyLTQ5MDYtYWYxYi1jMjNiMWE2MmJkNWUifQ.AjCuIPMjMzzp_zprh_8ha2ALe4CMjOBOQOGyQALde-M"}, ""), nil)
+
+	//req, err := http.NewRequest("GET", strings.Join([]string{u.String(), "v0/datasources/nginx_1?token=p.eyJ1IjogIjMzNjU3ODViLTRlNTYtNDY3MS1iMGUzLThjNjUzOTJiODhlYSIsICJpZCI6ICJiOTMwZjMyMi00MGYyLTQ5MDYtYWYxYi1jMjNiMWE2MmJkNWUifQ.AjCuIPMjMzzp_zprh_8ha2ALe4CMjOBOQOGyQALde-M"}, ""), nil)
+	req, err := http.NewRequest("GET", strings.Join([]string{u.String(), "v0/datasources/nginx_1?token=", config.WriteKey}, ""), nil)
 	if err != nil {
 		return err
 	}
@@ -212,6 +214,32 @@ func (e *Event) MarshalJSON() ([]byte, error) {
 		SampleRate uint            `json:"samplerate,omitempty"`
 		Timestamp  *time.Time      `json:"time,omitempty"`
 	}{e.data, sampleRate, tPointer})*/
+}
+
+func (m marshallableMap) MarshalCSV() ([]byte, error) {
+	keys := make([]string, len(m))
+	i := 0
+	for k := range m {
+		keys[i] = k
+		i++
+	}
+	sort.Strings(keys)
+	out := bytes.NewBufferString("")
+
+	first := true
+	for _, k := range keys {
+		b, ok := maybeMarshalValue(m[k])
+		if ok {
+			if first {
+				first = false
+			} else {
+				out.WriteByte('|')
+			}
+
+			out.Write(b)
+		}
+	}
+	return out.Bytes(), nil
 }
 
 // Builder is used to create templates for new events, specifying default fields
@@ -569,9 +597,9 @@ func (e *Event) SendPresampled() error {
 	if e.APIHost == "" {
 		return errors.New("No APIHost for Honeycomb. Can't send to the Great Unknown.")
 	}
-	/*if e.WriteKey == "" {
+	if e.WriteKey == "" {
 		return errors.New("No WriteKey specified. Can't send event.")
-	}*/
+	}
 	if e.Dataset == "" {
 		return errors.New("No Dataset for Honeycomb. Can't send datasetless.")
 	}
