@@ -382,7 +382,7 @@ func (w *WriterOutput) Stop() error  { return nil }
 func (w *WriterOutput) Add(ev *Event) {
 	w.Lock()
 	defer w.Unlock()
-	m, _ := ev.MarshalJSON()
+	m, _ := ev.MarshalCSV()
 	m = append(m, '\n')
 	if w.W == nil {
 		w.W = os.Stdout
