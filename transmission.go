@@ -21,7 +21,6 @@ import (
 	"net/url"
 	"os"
 	"path"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -315,7 +314,13 @@ func (b *batchAgg) encodeBatch(events []*Event) ([]byte, int) {
 		}
 		first = false
 		evByt, err := json.Marshal(ev)
-		var escEventContent string = strconv.Quote(fmt.Sprintf("%s", evByt))
+		// Escape json to be processed as CSV with a String.
+		// We need to change " by "" and quote the whole string
+		// Example: {"field_a": "value_a"} --> "{""field_a"": ""value_a""}""
+		var escQuotes string = strings.Replace(fmt.Sprintf("%s", evByt), "\"", "\"\"", -1)
+		var escEventContent string = fmt.Sprintf("\"%s\"", escQuotes)
+
+		//var escEventContent string = strconv.Quote(fmt.Sprintf("%s", evByt))
 
 		fmt.Printf("EVENTO: %s\n", escEventContent)
 
