@@ -1,6 +1,6 @@
 package libtb
 
-// txClient handles the transmission of events to Honeycomb.
+// txClient handles the transmission of events to Tinybird.
 //
 // Overview
 //
@@ -198,12 +198,8 @@ func (b *batchAgg) fireBatch(events []*Event) {
 		}
 		return
 	}
-	// url.Path = path.Join(url.Path, "/1/batch", dataset)
-	url.Path = path.Join(url.Path, "/")
-	//req, err := http.NewRequest("POST", url.String(), reqBody)
-	//req, err := http.NewRequest("POST", strings.Join([]string{url.String(), "?query=INSERT+INTO+", dataset, "+FORMAT+JSONEachRow"}, ""), bytes.NewReader(encEvs))
-	// req, err := http.NewRequest("POST", strings.Join([]string{url.String(), "?query=INSERT+INTO+", dataset, "+FORMAT+JSONEachRow"}, ""), reqBody)
 
+	url.Path = path.Join(url.Path, "/")
 	req, err := http.NewRequest("POST", strings.Join([]string{url.String(), "v0/datasources?name=", dataset, "&mode=append"}, ""), reqBody)
 
 	q := req.URL.Query()
@@ -211,16 +207,13 @@ func (b *batchAgg) fireBatch(events []*Event) {
 	q.Add("dialect_delimiter", "|")
 	req.URL.RawQuery = q.Encode()
 
-	//req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Content-Type", "application/csv")
 	if gzipped {
 		req.Header.Set("Content-Encoding", "gzip")
 	}
 	req.Header.Set("User-Agent", userAgent)
-	req.Header.Add("X-Honeycomb-Team", writeKey)
 
 	var bearer = "Bearer " + writeKey
-	//var bearer = "Bearer " + "p.eyJ1IjogIjMzNjU3ODViLTRlNTYtNDY3MS1iMGUzLThjNjUzOTJiODhlYSIsICJpZCI6ICJiOTMwZjMyMi00MGYyLTQ5MDYtYWYxYi1jMjNiMWE2MmJkNWUifQ.AjCuIPMjMzzp_zprh_8ha2ALe4CMjOBOQOGyQALde-M"
 	req.Header.Add("Authorization", bearer)
 
 	// send off batch!
@@ -306,7 +299,7 @@ func (b *batchAgg) encodeBatch(events []*Event) ([]byte, int) {
 	// track how many we successfully encode for later bookkeeping
 	var numEncoded int
 	buf := bytes.Buffer{}
-	//buf.WriteByte('[')
+
 	// ok, we've got our array, let's populate it with JSON events
 	for i, ev := range events {
 		if !first {
@@ -320,9 +313,7 @@ func (b *batchAgg) encodeBatch(events []*Event) ([]byte, int) {
 		var escQuotes string = strings.Replace(fmt.Sprintf("%s", evByt), "\"", "\"\"", -1)
 		var escEventContent string = fmt.Sprintf("\"%s\"", escQuotes)
 
-		//var escEventContent string = strconv.Quote(fmt.Sprintf("%s", evByt))
-
-		fmt.Printf("EVENTO: %s\n", escEventContent)
+		fmt.Printf("EVENT: %s\n", escEventContent)
 
 		if err != nil {
 			b.enqueueResponse(Response{
@@ -334,11 +325,10 @@ func (b *batchAgg) encodeBatch(events []*Event) ([]byte, int) {
 			events[i] = nil
 			continue
 		}
-		// buf.Write(evByt)
+
 		buf.Write([]byte(escEventContent))
 		numEncoded++
 	}
-	//buf.WriteByte(']')
 
 	return buf.Bytes(), numEncoded
 }
@@ -358,13 +348,7 @@ func (b *batchAgg) enqueueErrResponses(err error, events []*Event, duration time
 // buildReqReader returns an io.Reader and a boolean, indicating whether or not
 // the io.Reader is gzip-compressed.
 func buildReqReader(jsonEncoded []byte) (io.Reader, bool) {
-	// buf := bytes.Buffer{}
-	// g := gzip.NewWriter(&buf)
-	// if _, err := g.Write(jsonEncoded); err == nil {
-	// 	if err = g.Close(); err == nil { // flush
-	// 		return &buf, true
-	// 	}
-	// }
+
 	return bytes.NewReader(jsonEncoded), false
 }
 

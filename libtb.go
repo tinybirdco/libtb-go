@@ -28,9 +28,8 @@ func init() {
 
 const (
 	defaultSampleRate = 1
-	// defaultAPIHost    = "http://localhost:8123/"
-	defaultAPIHost = "http://localhost:8001/"
-	version        = "1.4.0"
+	defaultAPIHost    = "http://localhost:8001/"
+	version           = "1.4.0"
 
 	// DefaultMaxBatchSize how many events to collect in a batch
 	DefaultMaxBatchSize = 1000000
@@ -74,15 +73,15 @@ var UserAgentAddition string
 // Config specifies settings for initializing the library.
 type Config struct {
 
-	// WriteKey is the Honeycomb authentication token. If it is specified during
+	// WriteKey is the Tinybird authentication token. If it is specified during
 	// libtb initialization, it will be used as the default write key for all
 	// events. If absent, write key must be explicitly set on a builder or
-	// event. Find your team write key at https://ui.honeycomb.io/account
+	// event. Find your team write key at https://api.tinybird.co/tokens
 	WriteKey string
 
-	// Dataset is the name of the Honeycomb dataset to which to send these events.
+	// Dataset is the name of the datasource to which to send these events.
 	// If it is specified during libtb initialization, it will be used as the
-	// default dataset for all events. If absent, dataset must be explicitly set
+	// default datasource for all events. If absent, datasource must be explicitly set
 	// on a builder or event.
 	Dataset string
 
@@ -91,8 +90,8 @@ type Config struct {
 	// Send() is called, you would specify 250 here.
 	SampleRate uint
 
-	// APIHost is the hostname for the Honeycomb API server to which to send this
-	// event. default: https://api.honeycomb.io/
+	// APIHost is the hostname for the Tinybird API server to which to send this
+	// event. default: https://api.tinybird.co/
 	APIHost string
 
 	// TODO add logger in an agnostic way
@@ -162,8 +161,7 @@ Response body: %s`, resp.StatusCode, string(body))
 	return nil
 }
 
-// Event is used to hold data that can be sent to Honeycomb. It can also
-// specify overrides of the config settings.
+// Event is used to hold data that can be sent to Tinybird.
 type Event struct {
 	// WriteKey, if set, overrides whatever is found in Config
 	WriteKey string
@@ -185,16 +183,12 @@ type Event struct {
 	fieldHolder
 }
 
-// Marshaling an Event for batching up to the Honeycomb servers. Omits fields
+// Marshaling an Event for batching up to the Tinybird servers. Omits fields
 // that aren't specific to this particular event, and allows for behavior like
 // omitempty'ing a zero'ed out time.Time.
 func (e *Event) MarshalJSON() ([]byte, error) {
 	e.lock.RLock()
 	defer e.lock.RUnlock()
-	/*tPointer := &(e.Timestamp)
-	if e.Timestamp.IsZero() {
-		tPointer = nil
-	}*/
 
 	// don't include sample rate if it's 1; this is the default
 	sampleRate := e.SampleRate
@@ -555,7 +549,7 @@ func (f *fieldHolder) Fields() map[string]interface{} {
 	return f.data
 }
 
-// Send dispatches the event to be sent to Honeycomb, sampling if necessary.
+// Send dispatches the event to be sent to Clickhouse, sampling if necessary.
 //
 // If you have sampling enabled
 // (i.e. SampleRate >1), Send will only actually transmit data with a
@@ -576,7 +570,7 @@ func (e *Event) Send() error {
 	return e.SendPresampled()
 }
 
-// SendPresampled dispatches the event to be sent to Honeycomb.
+// SendPresampled dispatches the event to be sent to Tinybird.
 //
 // Sampling is assumed to have already happened. SendPresampled will dispatch
 // every event handed to it, and pass along the sample rate. Use this instead of
@@ -594,13 +588,13 @@ func (e *Event) SendPresampled() error {
 		return errors.New("No metrics added to event. Won't send empty event.")
 	}
 	if e.APIHost == "" {
-		return errors.New("No APIHost for Honeycomb. Can't send to the Great Unknown.")
+		return errors.New("No APIHost for Tinybird. Can't send to the Great Unknown.")
 	}
 	if e.WriteKey == "" {
 		return errors.New("No WriteKey specified. Can't send event.")
 	}
 	if e.Dataset == "" {
-		return errors.New("No Dataset for Honeycomb. Can't send datasetless.")
+		return errors.New("No Dataset for Tinybird. Can't send datasetless.")
 	}
 
 	txOnce.Do(func() {

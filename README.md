@@ -1,11 +1,11 @@
-# libclick [![Build Status](https://api.travis-ci.org/Altinity/libclick-go.svg?branch=master)](https://github.com/Altinity/libclick-go)
+# libtb
 
-Go library for sending events to [ClickHouse](https://clickhouse.yandex). This is a fork of [libhoney-go](https://godoc.org/github.com/honeycombio/libhoney-go) libarary.
+Go library for sending events to [Tinybird](https://www.tinybird.co/). This is a fork of [libhoney-go](https://godoc.org/github.com/honeycombio/libhoney-go) library.
 
 ## Installation:
 
 ```
-go get -v github.com/Altinity/libclick-go
+go get -v github.com/ygnuss/libtb-go
 ```
 
 ## Documentation
