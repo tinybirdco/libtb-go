@@ -139,8 +139,7 @@ func VerifyApiHost(config Config) error {
 		return fmt.Errorf("Error parsing API URL: %s", err)
 	}
 
-	//req, err := http.NewRequest("GET", strings.Join([]string{u.String(), "v0/datasources/nginx_1?token=p.eyJ1IjogIjMzNjU3ODViLTRlNTYtNDY3MS1iMGUzLThjNjUzOTJiODhlYSIsICJpZCI6ICJiOTMwZjMyMi00MGYyLTQ5MDYtYWYxYi1jMjNiMWE2MmJkNWUifQ.AjCuIPMjMzzp_zprh_8ha2ALe4CMjOBOQOGyQALde-M"}, ""), nil)
-	req, err := http.NewRequest("GET", strings.Join([]string{u.String(), "v0/datasources/nginx_1?token=", config.WriteKey}, ""), nil)
+	req, err := http.NewRequest("GET", strings.Join([]string{u.String(), "v0/datasources/", config.Dataset, "?token=", config.WriteKey}, ""), nil)
 	if err != nil {
 		return err
 	}
