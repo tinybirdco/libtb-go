@@ -164,6 +164,8 @@ func (b *batchAgg) fireBatch(events []*Event) {
 	if numEncoded == 0 {
 		return
 	}
+
+	fmt.Printf("Sending batch with %d events", numEncoded)
 	// get some attributes common to this entire batch up front
 	apiHost := events[0].APIHost
 	writeKey := events[0].WriteKey
@@ -313,7 +315,7 @@ func (b *batchAgg) encodeBatch(events []*Event) ([]byte, int) {
 		var escQuotes string = strings.Replace(fmt.Sprintf("%s", evByt), "\"", "\"\"", -1)
 		var escEventContent string = fmt.Sprintf("\"%s\"", escQuotes)
 
-		fmt.Printf("EVENT: %s\n", escEventContent)
+		//fmt.Printf("EVENT: %s\n", escEventContent)
 
 		if err != nil {
 			b.enqueueResponse(Response{
