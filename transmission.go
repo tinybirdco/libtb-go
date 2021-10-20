@@ -17,6 +17,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"mime/multipart"
 	"net/http"
 	"net/url"
 	"os"
@@ -165,7 +166,7 @@ func (b *batchAgg) fireBatch(events []*Event) {
 		return
 	}
 
-	fmt.Printf("Sending batch with %d events", numEncoded)
+	fmt.Printf("Sending batch with %d events \n", numEncoded)
 	// get some attributes common to this entire batch up front
 	apiHost := events[0].APIHost
 	writeKey := events[0].WriteKey
@@ -201,18 +202,27 @@ func (b *batchAgg) fireBatch(events []*Event) {
 		return
 	}
 
-	url.Path = path.Join(url.Path, "/")
-	req, err := http.NewRequest("POST", strings.Join([]string{url.String(), "v0/datasources?name=", dataset, "&mode=append"}, ""), reqBody)
-
-	q := req.URL.Query()
-	q.Add("name", dataset)
-	q.Add("dialect_delimiter", "|")
-	req.URL.RawQuery = q.Encode()
-
-	req.Header.Set("Content-Type", "application/csv")
 	if gzipped {
-		req.Header.Set("Content-Encoding", "gzip")
+		fmt.Print("Gzipped is not supported. We are using multipart forms to ingest data")
 	}
+
+	// Preparing multipart content
+	buf := new(bytes.Buffer)
+	bw := multipart.NewWriter(buf) // body writer
+
+	// add csv data (binary)
+	fw1, _ := bw.CreateFormFile("csv", "data.csv")
+	io.Copy(fw1, reqBody)
+
+	contType := bw.FormDataContentType()
+
+	bw.Close() //write the tail boundry
+
+	url.Path = path.Join(url.Path, "/")
+	req, err := http.NewRequest("POST", strings.Join([]string{url.String(), "v0/datasources?name=", dataset, "&mode=append"}, ""), buf)
+
+	// add headers
+	req.Header.Add("Content-Type", contType)
 	req.Header.Set("User-Agent", userAgent)
 
 	var bearer = "Bearer " + writeKey
@@ -233,7 +243,7 @@ func (b *batchAgg) fireBatch(events []*Event) {
 		// that didn't already error during encoding
 		b.enqueueErrResponses(err, events, dur/time.Duration(numEncoded))
 		// the POST failed so we're done with this batch key's worth of events
-		fmt.Println("Error calling TB")
+		fmt.Printf("\nError calling TB %v \n", err)
 		return
 	}
 
