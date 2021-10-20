@@ -28,7 +28,7 @@ func init() {
 
 const (
 	defaultSampleRate = 1
-	defaultAPIHost    = "http://localhost:8001/"
+	defaultAPIHost    = "http://api.tinybird.co/"
 	version           = "1.4.0"
 
 	// DefaultMaxBatchSize how many events to collect in a batch
@@ -155,7 +155,7 @@ func VerifyApiHost(config Config) error {
 	if resp.StatusCode != http.StatusOK {
 		body, _ := ioutil.ReadAll(resp.Body)
 		return fmt.Errorf(`Abnormal non-200 response from Tinybird server: %d
-Response body: %s`, resp.StatusCode, string(body))
+	Response body: %s`, resp.StatusCode, string(body))
 	}
 
 	return nil
