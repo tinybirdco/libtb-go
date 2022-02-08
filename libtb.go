@@ -30,6 +30,7 @@ const (
 	defaultSampleRate = 1
 	defaultAPIHost    = "http://api.tinybird.co/"
 	version           = "1.4.0"
+	defaultHfi        = false
 
 	// DefaultMaxBatchSize how many events to collect in a batch
 	DefaultMaxBatchSize = 1000000
@@ -55,6 +56,7 @@ var (
 	responses        = make(chan Response, 2*DefaultPendingWorkCapacity)
 	defaultBuilder   = &Builder{
 		APIHost:    defaultAPIHost,
+		Hfi:        defaultHfi,
 		SampleRate: defaultSampleRate,
 		dynFields:  make([]dynamicField, 0, 0),
 		fieldHolder: fieldHolder{
@@ -93,6 +95,10 @@ type Config struct {
 	// APIHost is the hostname for the Tinybird API server to which to send this
 	// event. default: https://api.tinybird.co/
 	APIHost string
+
+	// Enabled use HFI to ingest the data.
+	// Default to False - Data ingestion won't use Tinybird HFI
+	Hfi bool
 
 	// TODO add logger in an agnostic way
 
@@ -171,6 +177,8 @@ type Event struct {
 	SampleRate uint
 	// APIHost, if set, overrides whatever is found in Config
 	APIHost string
+	// Hfi, if set, overrides whatever is found in Config
+	Hfi bool
 	// Timestamp, if set, specifies the time for this event. If unset, defaults
 	// to Now()
 	Timestamp time.Time
@@ -246,6 +254,8 @@ type Builder struct {
 	SampleRate uint
 	// APIHost, if set, overrides whatever is found in Config
 	APIHost string
+	// Hfi, if set, overrides whatever is found in Config
+	Hfi bool
 
 	// fieldHolder contains fields (and methods) common to both events and builders
 	fieldHolder
@@ -376,6 +386,7 @@ func Init(config Config) error {
 	defaultBuilder = &Builder{
 		WriteKey:   config.WriteKey,
 		Dataset:    config.Dataset,
+		Hfi:        config.Hfi,
 		SampleRate: config.SampleRate,
 		APIHost:    config.APIHost,
 		dynFields:  make([]dynamicField, 0, 0),
@@ -674,6 +685,7 @@ func (b *Builder) NewEvent() *Event {
 		Dataset:    b.Dataset,
 		SampleRate: b.SampleRate,
 		APIHost:    b.APIHost,
+		Hfi:        b.Hfi,
 		Timestamp:  time.Now(),
 	}
 	e.data = make(map[string]interface{})
@@ -700,6 +712,7 @@ func (b *Builder) Clone() *Builder {
 		Dataset:    b.Dataset,
 		SampleRate: b.SampleRate,
 		APIHost:    b.APIHost,
+		Hfi:        b.Hfi,
 		dynFields:  make([]dynamicField, 0, len(b.dynFields)),
 	}
 	newB.data = make(map[string]interface{})
