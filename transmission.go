@@ -212,7 +212,6 @@ func (b *batchAgg) fireBatch(events []*Event) {
 	}
 
 	if hfi {
-		fmt.Sprintf("libtb-go/%s", version)
 		url.Path = path.Join(url.Path, "/")
 		req, err = http.NewRequest("POST", strings.Join([]string{url.String(), "v0/events?name=", dataset}, ""), reqBody)
 		contType = "application/json"
