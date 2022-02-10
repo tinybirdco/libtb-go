@@ -170,7 +170,6 @@ func (b *batchAgg) fireBatch(events []*Event) {
 		return
 	}
 
-	fmt.Printf("Sending batch with %d events \n", numEncoded)
 	// get some attributes common to this entire batch up front
 	apiHost := events[0].APIHost
 	writeKey := events[0].WriteKey
@@ -213,8 +212,8 @@ func (b *batchAgg) fireBatch(events []*Event) {
 
 	if hfi {
 		url.Path = path.Join(url.Path, "/")
-		req, err = http.NewRequest("POST", strings.Join([]string{url.String(), "v0/events?name=", dataset}, ""), reqBody)
-		contType = "application/json"
+		req, err = http.NewRequest("POST", strings.Join([]string{url.String(), "v0/events?format=ndjson&name=", dataset}, ""), reqBody)
+
 	} else {
 		// Preparing multipart content
 		buf := new(bytes.Buffer)
@@ -233,7 +232,9 @@ func (b *batchAgg) fireBatch(events []*Event) {
 	}
 
 	// add headers
-	req.Header.Add("Content-Type", contType)
+	if !hfi {
+		req.Header.Add("Content-Type", contType)
+	}
 	req.Header.Set("User-Agent", userAgent)
 
 	var bearer = "Bearer " + writeKey
@@ -266,7 +267,6 @@ func (b *batchAgg) fireBatch(events []*Event) {
 	if resp.StatusCode != http.StatusOK {
 		sd.Increment("send_errors")
 		body, err := ioutil.ReadAll(resp.Body)
-		fmt.Println(string(body))
 		if err != nil {
 			b.enqueueErrResponses(fmt.Errorf("Got HTTP error code but couldn't read response body: %v", err),
 				events, dur/time.Duration(numEncoded))
@@ -339,7 +339,6 @@ func (b *batchAgg) encodeBatch(events []*Event) ([]byte, int) {
 			var escQuotes string = strings.Replace(fmt.Sprintf("%s", evByt), "\"", "\"\"", -1)
 			escEventContent = fmt.Sprintf("\"%s\"", escQuotes)
 		}
-		//fmt.Printf("EVENT: %s\n", escEventContent)
 
 		if err != nil {
 			b.enqueueResponse(Response{
@@ -356,6 +355,7 @@ func (b *batchAgg) encodeBatch(events []*Event) ([]byte, int) {
 			buf.Write([]byte(escEventContent))
 		} else {
 			buf.Write(evByt)
+			buf.Write([]byte("\n"))
 		}
 		numEncoded++
 	}
