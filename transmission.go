@@ -152,6 +152,10 @@ func (b *batchAgg) Fire(notifier muster.Notifier) {
 
 func (b *batchAgg) fireBatch(events []*Event) {
 	start := time.Now().UTC()
+	var contType string
+	var err error
+	var req *http.Request
+
 	if b.testNower != nil {
 		start = b.testNower.Now()
 	}
@@ -166,11 +170,11 @@ func (b *batchAgg) fireBatch(events []*Event) {
 		return
 	}
 
-	fmt.Printf("Sending batch with %d events \n", numEncoded)
 	// get some attributes common to this entire batch up front
 	apiHost := events[0].APIHost
 	writeKey := events[0].WriteKey
 	dataset := events[0].Dataset
+	hfi := events[0].Hfi
 
 	// sigh. dislike
 	userAgent := fmt.Sprintf("libtb-go/%s", version)
@@ -206,23 +210,31 @@ func (b *batchAgg) fireBatch(events []*Event) {
 		fmt.Print("Gzipped is not supported. We are using multipart forms to ingest data")
 	}
 
-	// Preparing multipart content
-	buf := new(bytes.Buffer)
-	bw := multipart.NewWriter(buf) // body writer
+	if hfi {
+		url.Path = path.Join(url.Path, "/")
+		req, err = http.NewRequest("POST", strings.Join([]string{url.String(), "v0/events?format=ndjson&name=", dataset}, ""), reqBody)
 
-	// add csv data (binary)
-	fw1, _ := bw.CreateFormFile("csv", "data.csv")
-	io.Copy(fw1, reqBody)
+	} else {
+		// Preparing multipart content
+		buf := new(bytes.Buffer)
+		bw := multipart.NewWriter(buf) // body writer
 
-	contType := bw.FormDataContentType()
+		// add csv data (binary)
+		fw1, _ := bw.CreateFormFile("csv", "data.csv")
+		io.Copy(fw1, reqBody)
 
-	bw.Close() //write the tail boundry
+		contType = bw.FormDataContentType()
 
-	url.Path = path.Join(url.Path, "/")
-	req, err := http.NewRequest("POST", strings.Join([]string{url.String(), "v0/datasources?name=", dataset, "&mode=append"}, ""), buf)
+		bw.Close() //write the tail boundry
+
+		url.Path = path.Join(url.Path, "/")
+		req, err = http.NewRequest("POST", strings.Join([]string{url.String(), "v0/datasources?name=", dataset, "&mode=append"}, ""), buf)
+	}
 
 	// add headers
-	req.Header.Add("Content-Type", contType)
+	if !hfi {
+		req.Header.Add("Content-Type", contType)
+	}
 	req.Header.Set("User-Agent", userAgent)
 
 	var bearer = "Bearer " + writeKey
@@ -255,7 +267,6 @@ func (b *batchAgg) fireBatch(events []*Event) {
 	if resp.StatusCode != http.StatusOK {
 		sd.Increment("send_errors")
 		body, err := ioutil.ReadAll(resp.Body)
-		fmt.Println(string(body))
 		if err != nil {
 			b.enqueueErrResponses(fmt.Errorf("Got HTTP error code but couldn't read response body: %v", err),
 				events, dur/time.Duration(numEncoded))
@@ -311,6 +322,7 @@ func (b *batchAgg) encodeBatch(events []*Event) ([]byte, int) {
 	// track how many we successfully encode for later bookkeeping
 	var numEncoded int
 	buf := bytes.Buffer{}
+	hfi := events[0].Hfi
 
 	// ok, we've got our array, let's populate it with JSON events
 	for i, ev := range events {
@@ -318,14 +330,15 @@ func (b *batchAgg) encodeBatch(events []*Event) ([]byte, int) {
 			buf.WriteByte(13)
 		}
 		first = false
+		var escEventContent string
 		evByt, err := json.Marshal(ev)
-		// Escape json to be processed as CSV with a String.
-		// We need to change " by "" and quote the whole string
-		// Example: {"field_a": "value_a"} --> "{""field_a"": ""value_a""}""
-		var escQuotes string = strings.Replace(fmt.Sprintf("%s", evByt), "\"", "\"\"", -1)
-		var escEventContent string = fmt.Sprintf("\"%s\"", escQuotes)
-
-		//fmt.Printf("EVENT: %s\n", escEventContent)
+		if !hfi {
+			// Escape json to be processed as CSV with a String.
+			// We need to change " by "" and quote the whole string
+			// Example: {"field_a": "value_a"} --> "{""field_a"": ""value_a""}""
+			var escQuotes string = strings.Replace(fmt.Sprintf("%s", evByt), "\"", "\"\"", -1)
+			escEventContent = fmt.Sprintf("\"%s\"", escQuotes)
+		}
 
 		if err != nil {
 			b.enqueueResponse(Response{
@@ -338,7 +351,12 @@ func (b *batchAgg) encodeBatch(events []*Event) ([]byte, int) {
 			continue
 		}
 
-		buf.Write([]byte(escEventContent))
+		if !hfi {
+			buf.Write([]byte(escEventContent))
+		} else {
+			buf.Write(evByt)
+			buf.Write([]byte("\n"))
+		}
 		numEncoded++
 	}
 
