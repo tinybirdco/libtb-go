@@ -37,15 +37,15 @@ type Response struct {
 
 func (r *Response) UnmarshalJSON(b []byte) error {
 	aux := struct {
-		Error  string
+		Errors string
 		Status int
 	}{}
 	if err := json.Unmarshal(b, &aux); err != nil {
 		return err
 	}
 	r.StatusCode = aux.Status
-	if aux.Error != "" {
-		r.Err = errors.New(aux.Error)
+	if aux.Errors != "" {
+		r.Err = errors.New(aux.Errors)
 	}
 	return nil
 }
