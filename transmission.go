@@ -286,8 +286,8 @@ func (b *batchAgg) fireBatch(events []*Event) {
 	}
 
 	// decode the responses
-	batchResponses := []Response{}
-	err = json.NewDecoder(resp.Body).Decode(&batchResponses)
+	response := Response{}
+	err = json.NewDecoder(resp.Body).Decode(&response)
 	if err != nil {
 		// if we can't decode the responses, just error out all of them
 		sd.Increment("response_decode_errors")
@@ -295,23 +295,9 @@ func (b *batchAgg) fireBatch(events []*Event) {
 		return
 	}
 
-	// Go through the responses and send them down the queue. If an Event
-	// triggered a JSON error, it wasn't sent to the server and won't have a
-	// returned response... so we have to be a bit more careful matching up
-	// responses with Events.
-	var eIdx int
-	for _, resp := range batchResponses {
-		resp.Duration = dur / time.Duration(numEncoded)
-		for events[eIdx] == nil {
-			eIdx++
-		}
-		if eIdx == len(events) { // just in case
-			break
-		}
-		resp.Metadata = events[eIdx].Metadata
-		b.enqueueResponse(resp)
-		eIdx++
-	}
+	response.Duration = dur / time.Duration(numEncoded)
+	response.Metadata = events[0].Metadata
+	b.enqueueResponse(response)
 }
 
 // create the JSON for this event list manually so that we can send
